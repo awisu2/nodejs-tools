@@ -36,11 +36,37 @@ let aws = {
         header: {
             cors: {
                 "Access-Control-Allow-Origin": '*',
+                "Access-Control-Allow-Methods": 'GET, POST, OPTIONS, PUT, DELETE',
+            },
+        },
+        event: {
+            get: {
+                parameters: function(event) {
+                    let method = aws.lambda.event.get.httpMethod(event);
+                    if(method == "GET") {
+                        return event["queryStringParameters"];
+                    } else {
+                        let params = {};
+                        if(event["body"]) {
+                            let bodies = event["body"].split("&");
+                            for(let k in bodies){
+                                let param = bodies[k].split("=");
+                                if(param.length != 2) continue;
+                                params[param[0]] = param[1];
+                            }
+                        }
+                        return params;
+                    }
+                },
+                httpMethod: function(event) {
+                    return event["httpMethod"];
+                },
             },
         },
         test: {
             local: function(tests, options){
                 if(typeof options == "undefined") options = {};
+
                 // set path
                 if(options.path) {
                     process.env.NODE_PATH = ("NODE_PATH" in process.env && process.env)
@@ -49,14 +75,24 @@ let aws = {
                 }
 
                 // get test
-                let name = options.name;
-                let isAll = (name == "all");
+                let names = options.names;
+                if(typeof names != "object") names = [];
+                if (names.length === 0) {
+                    if(tests && typeof tests == "object") {
+                        console.log("please choose any test");
+                        for(let k in tests) {
+                            console.log("- "+k);
+                        }
+                    }
+                    return;
+                }
+                let isAll = names.includes("all");
 
                 // test
-                function test(name, isAll){
+                function test(names, isAll){
                     let count = 0;
                     for(let k in tests) {
-                        if (k == name || isAll) {
+                        if (isAll || names.includes(k)) {
                             count = count + 1;
                             console.log("testing " + k + "::");
                             let test = tests[k];
@@ -70,16 +106,28 @@ let aws = {
                             }
 
                             let _module = require(test.file);
-                            _module[test.function](test.event, test.content, test.callback);
+                            _module[test.function](test.event, test.context, test.callback);
                         }
                     }
                     console.log("execute " + count + " tests.");
                 }
-                test(name, isAll);
+                test(names, isAll);
             },
-        }
+            def: {
+                file: "index",
+                function: "handler",
+                event: [],
+                context: {},
+                callback: function(err, data){
+                    if(err){
+                        console.log("ERROR\n", err);
+                    } else {
+                        console.log(data);
+                    }
+                },
+            },
+        },
     },
 };
 
 if(typeof exports != 'undefined') for(let k in aws) exports[k] = aws[k];
-
