@@ -1,5 +1,7 @@
 "use strict";
 
+const common = require("./common");
+
 let aws = {
     lambda: {
         response: {
@@ -46,16 +48,7 @@ let aws = {
                     if(method == "GET") {
                         return event["queryStringParameters"];
                     } else {
-                        let params = {};
-                        if(event["body"]) {
-                            let bodies = event["body"].split("&");
-                            for(let k in bodies){
-                                let param = bodies[k].split("=");
-                                if(param.length != 2) continue;
-                                params[param[0]] = param[1];
-                            }
-                        }
-                        return params;
+                        return common.uri.query.parse(event["body"]);
                     }
                 },
                 httpMethod: function(event) {
@@ -89,33 +82,33 @@ let aws = {
                 let isAll = names.includes("all");
 
                 // test
-                function test(names, isAll){
-                    let count = 0;
-                    for(let k in tests) {
-                        if (isAll || names.includes(k)) {
-                            count = count + 1;
-                            console.log("testing " + k + "::");
-                            let test = tests[k];
+                let count = 0;
+                for(let k in tests) {
+                    if (isAll || names.includes(k)) {
+                        count = count + 1;
+                        console.log("testing " + k + "::");
+                        let test = tests[k];
 
-                            if(options.def) {
-                                for(let k in options.def){
-                                    if(!(k in test)) {
-                                        test[k] = options.def[k];
-                                    }
+                        if(options.def) {
+                            for(let k in options.def){
+                                if(!(k in test)) {
+                                    test[k] = options.def[k];
                                 }
                             }
-
-                            let _module = require(test.file);
-                            _module[test.function](test.event, test.context, test.callback);
                         }
+
+                        let _module = require(test.file);
+                        _module[test.function](test.event, test.context, test.callback);
                     }
-                    console.log("execute " + count + " tests.");
                 }
-                test(names, isAll);
+                console.log("execute " + count + " tests.");
             },
             def: {
                 file: "index",
                 function: "handler",
+                httpMethod: "GET",
+                queryStringParameters: undefined,
+                body: undefined,
                 event: [],
                 context: {},
                 callback: function(err, data){

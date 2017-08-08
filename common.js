@@ -24,6 +24,33 @@ let common = {
             return common.object.val(process.argv, 2+index, undefined);
         }
     },
+    uri: {
+        query: {
+            parse: (query)=>{
+                if(!query || typeof(query) != "string") return {};
+
+                let params = {};
+                let queries = query.split("&");
+                const _decode = decodeURIComponent;
+                for(let i in queries) {
+                    let param = queries[i].split("=");
+                    if(param.length < 2) continue;
+                    params[_decode(param[0])] = _decode(param[1]);
+                }
+                return params;
+            },
+            encode: (obj)=>{
+                let query = "";
+                const _encode = encodeURIComponent;
+                for(let k in obj) {
+                    if(query) query = query + "&";
+                    query = query + _encode(k) + "=" + _encode(obj[k]);
+                }
+                return query;
+            }
+        },
+        
+    },
     env: {
         addNodePath: (path)=>{
             if("NODE_PATH" in process.env && process.env) {
