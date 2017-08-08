@@ -19,8 +19,8 @@ let common = {
         current: ()=>{
             return process.argv[1];
         },
-        get: function(index) {
-            if(typeof index == "undefined") return process.argv.slice(2);
+        get: (index)=>{
+            if(common.is.undefined(index)) return process.argv.slice(2);
             return common.object.val(process.argv, 2+index, undefined);
         }
     },
@@ -33,6 +33,20 @@ let common = {
             }
             require('module')._initPaths();
         },
+    },
+    is: {
+        undefined: (v)=>{
+            return typeof(v) == "undefined";
+        },
+        number: (v)=>{
+            let type = typeof(v);
+            if (type != "number" && type != "string") return true;
+            return v == parseFloat(v) && isFinite(v);
+        },
+        exists: (v)=>{
+            if(!v) return false;
+            return typeof(v) != "object" ||  Object.keys(v).length !== 0;
+        }        
     },
 };
 
